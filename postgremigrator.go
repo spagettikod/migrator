@@ -26,18 +26,19 @@ func (sm PostgresMigrator) Init() error {
 		return err
 	}
 	if !initialized {
-		_, err = sm.db.Exec(fmt.Sprintf("CREATE TABLE %s._migrator_ (version INTEGER NOT NULL) STRICT", sm.schema))
+		_, err = sm.db.Exec(fmt.Sprintf("CREATE TABLE %s._migrator_ (version INTEGER NOT NULL)", sm.schema))
 		if err != nil {
 			return err
 		}
 		_, err = sm.db.Exec(fmt.Sprintf("INSERT INTO %s._migrator_ (version) VALUES (0)", sm.schema))
+		return err
 	}
-	return err
+	return nil
 }
 
 // Initialized will check if the Migrator is setup in this database.
 func (sm PostgresMigrator) Initialized() (bool, error) {
-	row := sm.db.QueryRow("SELECT table_name FROM information_schema.tables WHERE table_schema = ?1 AND table_name = 'users'", sm.schema)
+	row := sm.db.QueryRow("SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_name = '_migrator_'", sm.schema)
 	name := ""
 	err := row.Scan(&name)
 	if err != nil {
@@ -73,7 +74,7 @@ func (sm PostgresMigrator) SetVersion(version int) error {
 	if err != nil {
 		return err
 	}
-	stmt := fmt.Sprintf("UPDATE %s._migrator_ SET version = ?1", sm.schema)
+	stmt := fmt.Sprintf("UPDATE %s._migrator_ SET version = $1", sm.schema)
 	slog.Debug("setting version", "currentVersion", currentVersion, "new_version", version, "sql", stmt)
 	_, err = sm.db.Exec(stmt, version)
 	return err

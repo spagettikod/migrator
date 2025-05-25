@@ -1,5 +1,5 @@
 # Migrator
-Tool to run SQL migrations from your Go application. It supports upgrading and downgrading of your database.
+Package to run SQL migrations from within your Go application. It supports upgrading and downgrading your database.
 
 Supported databases:
 * **SQLite** (tested on version 3)

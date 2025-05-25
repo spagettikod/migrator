@@ -24,7 +24,7 @@ type Migration struct {
 	version int    `yaml:"-"`
 }
 
-func Load() (Migrations, error) {
+func load() (Migrations, error) {
 	filename, found := os.LookupEnv(EnvVarFile)
 	if !found {
 		return Migrations{}, ErrMigrationFileEnvMissing
@@ -40,11 +40,11 @@ func Load() (Migrations, error) {
 	return migrations, nil
 }
 
-func (m Migration) Stmt(dir Direction) string {
+func (m Migration) stmt(dir direction) string {
 	switch dir {
-	case DirectionDown:
+	case directionDown:
 		return m.Down
-	case DirectionUp:
+	case directionUp:
 		return m.Up
 	}
 	return ""

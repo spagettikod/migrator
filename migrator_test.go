@@ -66,7 +66,7 @@ func TestValidTarget(t *testing.T) {
 		},
 		{
 			base:     base{migrations: Migrations{Migrations: []Migration{{}, {}}}},
-			Target:   TargetStart,
+			Target:   targetStart,
 			Expected: true, // TargetStart is the starting point when no target has been run
 		},
 		{
@@ -84,14 +84,14 @@ func TestValidTarget(t *testing.T) {
 }
 
 func TestDirection(t *testing.T) {
-	if direction(0, 2) != DirectionUp {
-		t.Errorf("expected %v but got: %v", DirectionUp, direction(0, 2))
+	if migrationDirection(0, 2) != directionUp {
+		t.Errorf("expected %v but got: %v", directionUp, migrationDirection(0, 2))
 	}
-	if direction(1, 0) != DirectionDown {
-		t.Errorf("expected %v but got: %v", DirectionDown, direction(1, 0))
+	if migrationDirection(1, 0) != directionDown {
+		t.Errorf("expected %v but got: %v", directionDown, migrationDirection(1, 0))
 	}
-	if direction(1, 1) != DirectionNone {
-		t.Errorf("expected %v but got: %v", DirectionNone, direction(1, 1))
+	if migrationDirection(1, 1) != directionNone {
+		t.Errorf("expected %v but got: %v", directionNone, migrationDirection(1, 1))
 	}
 }
 
@@ -106,7 +106,7 @@ func TestTargetMigrations(t *testing.T) {
 	cases := []Case{
 		{
 			Migrations:     Migrations{Migrations: []Migration{{Up: "a"}, {Up: "b"}, {Up: "c"}}},
-			CurrentVersion: TargetStart,
+			CurrentVersion: targetStart,
 			Target:         1,
 			Expected:       []Migration{{Up: "a", version: 1}},
 		},
@@ -118,7 +118,7 @@ func TestTargetMigrations(t *testing.T) {
 		},
 		{
 			Migrations:     Migrations{Migrations: []Migration{{Up: "a"}, {Up: "b"}, {Up: "c"}}},
-			CurrentVersion: TargetStart,
+			CurrentVersion: targetStart,
 			Target:         3,
 			Expected:       []Migration{{Up: "a", version: 1}, {Up: "b", version: 2}, {Up: "c", version: 3}},
 		},

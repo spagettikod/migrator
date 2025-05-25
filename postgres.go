@@ -12,10 +12,13 @@ type PostgresMigrator struct {
 	schema string
 }
 
-func NewPostgresMigrator(db *sql.DB, schema string) (Migrator, error) {
-	migrations, err := Load()
+// NewPostgresMigrator returns a PostgresMigrator ready to run migrations. It will initialize and
+// validate the database is ready for migrations. It also validates the given migration target is
+// valid.
+func NewPostgresMigrator(db *sql.DB, schema string) (PostgresMigrator, error) {
+	migrations, err := load()
 	if err != nil {
-		return nil, err
+		return PostgresMigrator{}, err
 	}
 	base, err := newBase(db, migrations)
 	if err != nil {
@@ -30,6 +33,31 @@ func NewPostgresMigrator(db *sql.DB, schema string) (Migrator, error) {
 		return sm, err
 	}
 	return sm, nil
+}
+
+// Version returns the current version from the database.
+func (pm PostgresMigrator) Version() (int, error) {
+	initialized, err := pm.initialized()
+	if err != nil {
+		return -1, err
+	}
+	if !initialized {
+		return 0, ErrMigratorNotInitialized
+	}
+
+	row := pm.db.QueryRow(fmt.Sprintf("SELECT version FROM %s._migrator_", pm.schema))
+	version := 0
+	if err := row.Scan(&version); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return -1, err
+	}
+	return version, nil
+}
+
+// Migrate will migrate the database to version given by the environment variable MIGRATOR_TARGET_VERSION.
+// If it fails it will return an error. On successful migration it will return an array with Migration
+// that were run.
+func (pm PostgresMigrator) Migrate() ([]Migration, error) {
+	return pm.migrate(pm)
 }
 
 func (pm PostgresMigrator) init() error {
@@ -61,24 +89,6 @@ func (pm PostgresMigrator) initialized() (bool, error) {
 	return true, nil
 }
 
-// Version returns the current version from the database.
-func (pm PostgresMigrator) Version() (int, error) {
-	initialized, err := pm.initialized()
-	if err != nil {
-		return -1, err
-	}
-	if !initialized {
-		return 0, ErrMigratorNotInitialized
-	}
-
-	row := pm.db.QueryRow(fmt.Sprintf("SELECT version FROM %s._migrator_", pm.schema))
-	version := 0
-	if err := row.Scan(&version); err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return -1, err
-	}
-	return version, nil
-}
-
 func (pm PostgresMigrator) setVersion(version int) error {
 	currentVersion, err := pm.Version()
 	if err != nil {
@@ -88,9 +98,4 @@ func (pm PostgresMigrator) setVersion(version int) error {
 	slog.Debug("setting version", "currentVersion", currentVersion, "new_version", version, "sql", stmt)
 	_, err = pm.db.Exec(stmt, version)
 	return err
-}
-
-// Migrate will run the forward migrations in the array.
-func (pm PostgresMigrator) Migrate() ([]Migration, error) {
-	return pm.migrate(pm)
 }

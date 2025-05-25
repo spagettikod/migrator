@@ -11,11 +11,11 @@ import (
 const (
 	EnvVarFile              = "MIGRATOR_FILE"
 	EnvVarTarget            = "MIGRATOR_TARGET_VERSION"
-	TargetStart             = 0
-	InvalidTarget           = -2
-	DirectionUp   Direction = 1
-	DirectionDown Direction = 2
-	DirectionNone Direction = 0
+	targetStart             = 0
+	invalidTarget           = -2
+	directionUp   direction = 1
+	directionDown direction = 2
+	directionNone direction = 0
 )
 
 var ErrInvalidTargetVersion = errors.New("migrator: target version is not valid, make sure MIGRATOR_TARGET_VERSION is correct")
@@ -23,19 +23,19 @@ var ErrTargetOutOfBounds = errors.New("migrator: MIGRATOR_TARGET_VERSION does no
 var ErrMigratorNotInitialized = errors.New("migrator: not initialized, did you call Init?")
 var ErrMigrationFileEnvMissing = errors.New("migrator: environment variable MIGRATOR_FILE empty, can not load migrations")
 
-type Direction int
+type direction int
 
 type Migrator interface {
-	// Init will set up the Migrator for the current database.
-	init() error
-	// Initialized will check if the Migrator is setup in this database.
-	initialized() (bool, error)
-	// SetVersion updates the current version in the database.
-	setVersion(version int) error
 	// Version returns the current version from the database.
 	Version() (int, error)
 	// Migrate will run the forward migrations in the array.
 	Migrate() ([]Migration, error)
+	// init will set up the Migrator for the current database.
+	init() error
+	// initialized will check if the Migrator is setup in this database.
+	initialized() (bool, error)
+	// setVersion updates the current version in the database.
+	setVersion(version int) error
 }
 
 type base struct {
@@ -56,49 +56,49 @@ func newBase(db *sql.DB, migrations Migrations) (base, error) {
 }
 
 func (b base) parseTarget() (int, error) {
-	target := InvalidTarget
+	target := invalidTarget
 	tStr, found := os.LookupEnv(EnvVarTarget)
 	if found {
 		var err error
 		target, err = strconv.Atoi(tStr)
 		if err != nil {
-			return InvalidTarget, ErrInvalidTargetVersion
+			return invalidTarget, ErrInvalidTargetVersion
 		}
 	}
 	if !b.validTarget(target) {
 		if target > len(b.migrations.Migrations) {
-			return InvalidTarget, ErrTargetOutOfBounds
+			return invalidTarget, ErrTargetOutOfBounds
 		}
-		return InvalidTarget, ErrInvalidTargetVersion
+		return invalidTarget, ErrInvalidTargetVersion
 	}
 	return target, nil
 }
 
 func (b base) validTarget(target int) bool {
-	if target == InvalidTarget {
+	if target == invalidTarget {
 		return false
 	}
-	if target < TargetStart {
+	if target < targetStart {
 		return false
 	}
 	return target <= len(b.migrations.Migrations)
 }
 
-func direction(version, target int) Direction {
+func migrationDirection(version, target int) direction {
 	if version == target {
-		return DirectionNone
+		return directionNone
 	}
 	if version > target {
-		return DirectionDown
+		return directionDown
 	}
-	return DirectionUp
+	return directionUp
 }
 
 func (b base) targetMigrations(currVer int) []Migration {
-	switch direction(currVer, b.target) {
-	case DirectionUp:
+	switch migrationDirection(currVer, b.target) {
+	case directionUp:
 		return b.migrations.Migrations[currVer:b.target]
-	case DirectionDown:
+	case directionDown:
 		revMigations := b.migrations.Migrations[b.target:currVer]
 		slices.Reverse(revMigations)
 		return revMigations
@@ -114,10 +114,10 @@ func (b base) migrate(m Migrator) ([]Migration, error) {
 	}
 	tms := b.targetMigrations(v)
 	for _, tm := range tms {
-		if _, err := b.db.Exec(tm.Stmt(direction(v, b.target))); err != nil {
+		if _, err := b.db.Exec(tm.stmt(migrationDirection(v, b.target))); err != nil {
 			return nil, err
 		}
-		if direction(v, b.target) == DirectionDown {
+		if migrationDirection(v, b.target) == directionDown {
 			m.setVersion(tm.version - 1)
 		} else {
 			m.setVersion(tm.version)

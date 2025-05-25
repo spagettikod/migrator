@@ -3,7 +3,7 @@ Package to run SQL migrations from within your Go application. It supports upgra
 
 Supported databases:
 * **SQLite** (tested on version 3)
-* **PostgreSQL** (tested on 17.4 but should work for older databases as well)
+* **PostgreSQL** (tested on 17.4 but should work for older versions as well)
 
 This package only depends on database drivers for testing. When in usage it only uses the standard package `database/sql`.
 

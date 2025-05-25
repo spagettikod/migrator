@@ -3,20 +3,31 @@ package migrator
 import (
 	"database/sql"
 	"errors"
-	"log/slog"
 )
 
 type SqliteMigrator struct {
-	db *sql.DB
+	base
 }
 
-func NewSqliteMigrator(db *sql.DB) SqliteMigrator {
-	return SqliteMigrator{db: db}
+func NewSqliteMigrator(db *sql.DB) (Migrator, error) {
+	migrations, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	base, err := newBase(db, migrations)
+	if err != nil {
+		return SqliteMigrator{}, err
+	}
+	sm := SqliteMigrator{base: base}
+	if err := sm.init(); err != nil {
+		return sm, err
+	}
+	return sm, nil
 }
 
 // Init will set up the Migrator for the current database. If already initialized it does nothing.
-func (sm SqliteMigrator) Init() error {
-	initialized, err := sm.Initialized()
+func (sm SqliteMigrator) init() error {
+	initialized, err := sm.initialized()
 	if err != nil {
 		return err
 	}
@@ -31,7 +42,7 @@ func (sm SqliteMigrator) Init() error {
 }
 
 // Initialized will check if the Migrator is setup in this database.
-func (sm SqliteMigrator) Initialized() (bool, error) {
+func (sm SqliteMigrator) initialized() (bool, error) {
 	row := sm.db.QueryRow("SELECT name FROM sqlite_master WHERE type = 'table' AND name = '_migrator_'")
 	name := ""
 	err := row.Scan(&name)
@@ -44,9 +55,16 @@ func (sm SqliteMigrator) Initialized() (bool, error) {
 	return true, nil
 }
 
+// SetVersion updates the current version in the database.
+func (sm SqliteMigrator) setVersion(version int) error {
+	stmt := "UPDATE _migrator_ SET version = ?1"
+	_, err := sm.db.Exec(stmt, version)
+	return err
+}
+
 // Version returns the current version from the database.
 func (sm SqliteMigrator) Version() (int, error) {
-	initialized, err := sm.Initialized()
+	initialized, err := sm.initialized()
 	if err != nil {
 		return -1, err
 	}
@@ -62,35 +80,6 @@ func (sm SqliteMigrator) Version() (int, error) {
 	return version, nil
 }
 
-// SetVersion updates the current version in the database.
-func (sm SqliteMigrator) SetVersion(version int) error {
-	currentVersion, err := sm.Version()
-	if err != nil {
-		return err
-	}
-	stmt := "UPDATE _migrator_ SET version = ?1"
-	slog.Debug("setting version", "currentVersion", currentVersion, "new_version", version, "sql", stmt)
-	_, err = sm.db.Exec(stmt, version)
-	return err
-}
-
-// Migrate will run the forward migrations in the array.
-func (sm SqliteMigrator) Migrate(migrations []string) error {
-	v, err := sm.Version()
-	if err != nil {
-		return err
-	}
-	// if no migrations have run we're at version -1, to kickstart migrations we must start at v==0
-	if v == -1 {
-		v = 0
-	}
-	slog.Debug("migration check", "current_migration", v, "available_migrations", len(migrations)-v)
-	for i := v; i < len(migrations); i++ {
-		slog.Debug("migrating", "from", i, "to", i+1, "migration", migrations[i])
-		if _, err := sm.db.Exec(migrations[i]); err != nil {
-			return err
-		}
-		sm.SetVersion(i + 1)
-	}
-	return nil
+func (sm SqliteMigrator) Migrate() ([]Migration, error) {
+	return sm.migrate(sm)
 }

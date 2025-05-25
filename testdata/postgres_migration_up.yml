@@ -1,0 +1,5 @@
+migrations:
+  - up: >
+      CREATE TABLE test (id INTEGER PRIMARY KEY)
+    down: >
+      DROP TABLE test

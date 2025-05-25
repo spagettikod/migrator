@@ -6,4 +6,4 @@ services:
       - POSTGRES_USER=pgtest
       - POSTGRES_PASSWORD=testing
     ports:
-      - "5432:5432"
+      - 5432:5432

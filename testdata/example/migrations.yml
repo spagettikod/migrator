@@ -1,0 +1,13 @@
+migrations:
+  - comment: "Create user table"
+    up: >
+        CREATE TABLE user
+        (id INTEGER PRIMARY KEY) 
+    down: >
+        DROP TABLE user
+  - comment: "Create address table"
+    up: >
+        CREATE TABLE address
+        (id INTEGER PRIMARY KEY) 
+    down: >
+        DROP TABLE address

@@ -1,130 +1,144 @@
 package migrator
 
 import (
-	"database/sql"
+	"fmt"
+	"os"
+	"slices"
 	"testing"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
-func TestInitialized(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("could not open database: %s", err)
+func TestTargetVersion(t *testing.T) {
+	b := base{db: nil, migrations: Migrations{[]Migration{{}}}}
+	// no target given should result in error
+	_, err := b.parseTarget()
+	if err == nil {
+		t.Errorf("error was nil, expected an error")
 	}
-	sm := NewSqliteMigrator(db)
-	init, err := sm.Initialized()
-	if err != nil {
-		t.Fatalf("error while running Initialized: %s", err)
+	if err != nil && err != ErrInvalidTargetVersion {
+		t.Fatal(err)
 	}
-	if init {
-		t.Fatal("expected Initlized to return false but it returned true")
+
+	os.Setenv(EnvVarTarget, "a")
+	_, err = b.parseTarget()
+	if err == nil {
+		t.Errorf("error was nil, expected an error")
+	}
+	if err != nil && err != ErrInvalidTargetVersion {
+		t.Fatal(err)
+	}
+
+	os.Setenv(EnvVarTarget, "-1")
+	_, err = b.parseTarget()
+	if err == nil {
+		t.Errorf("error was nil, expected an error")
+	}
+	if err != nil && err != ErrInvalidTargetVersion {
+		t.Fatal(err)
+	}
+
+	os.Setenv(EnvVarTarget, "5")
+	_, err = b.parseTarget()
+	if err == nil {
+		t.Errorf("error was nil, expected an error")
+	}
+	if err != nil && err != ErrTargetOutOfBounds {
+		t.Fatal(err)
+	}
+
+	os.Setenv(EnvVarTarget, "0")
+	_, err = b.parseTarget()
+	if err != nil {
+		t.Errorf("undexpected error occured: %s", err)
+	}
+}
+func TestValidTarget(t *testing.T) {
+	type Case struct {
+		base     base
+		Target   int
+		Expected bool
+	}
+
+	cases := []Case{
+		{
+			base:     base{migrations: Migrations{Migrations: []Migration{{}, {}}}},
+			Target:   2,
+			Expected: true,
+		},
+		{
+			base:     base{migrations: Migrations{Migrations: []Migration{{}, {}}}},
+			Target:   TargetStart,
+			Expected: true, // TargetStart is the starting point when no target has been run
+		},
+		{
+			base:     base{migrations: Migrations{Migrations: []Migration{{}, {}}}},
+			Target:   -1,
+			Expected: false,
+		},
+	}
+
+	for i, tc := range cases {
+		if actual := tc.base.validTarget(tc.Target); actual != tc.Expected {
+			t.Errorf("%v: expected %v but got %v", i, tc.Expected, actual)
+		}
 	}
 }
 
-func TestInit(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("could not open database: %s", err)
+func TestDirection(t *testing.T) {
+	if direction(0, 2) != DirectionUp {
+		t.Errorf("expected %v but got: %v", DirectionUp, direction(0, 2))
 	}
-	sm := NewSqliteMigrator(db)
-
-	// should not be initialized
-	isInitialized, err := sm.Initialized()
-	if err != nil {
-		t.Fatalf("error while running Initialized: %s", err)
+	if direction(1, 0) != DirectionDown {
+		t.Errorf("expected %v but got: %v", DirectionDown, direction(1, 0))
 	}
-	if isInitialized {
-		t.Fatal("expected Initialized to return false but it returned true")
-	}
-
-	// initialize
-	if err := sm.Init(); err != nil {
-		t.Fatalf("error while running Init: %s", err)
-	}
-
-	// should now be initialized
-	isInitialized, err = sm.Initialized()
-	if err != nil {
-		t.Fatalf("error while running Initialized: %s", err)
-	}
-	if !isInitialized {
-		t.Fatal("expected Initialized to return true but it returned false")
+	if direction(1, 1) != DirectionNone {
+		t.Errorf("expected %v but got: %v", DirectionNone, direction(1, 1))
 	}
 }
 
-func TestVersion(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("could not open database: %s", err)
-	}
-	sm := NewSqliteMigrator(db)
-	// initialize
-	if err := sm.Init(); err != nil {
-		t.Fatalf("error while running Init: %s", err)
+func TestTargetMigrations(t *testing.T) {
+	type Case struct {
+		Migrations     Migrations
+		CurrentVersion int
+		Target         int
+		Expected       []Migration
 	}
 
-	// check version of newly initialized database
-	version, err := sm.Version()
-	if err != nil {
-		t.Fatalf("error while running Version: %s", err)
-	}
-	if version != 0 {
-		t.Fatalf("expected Version 0, but got %v", version)
-	}
-
-	// set version to 5
-	if err := sm.SetVersion(5); err != nil {
-		t.Fatalf("failed while running SetVersion: %s", err)
-	}
-
-	// check version of database after update
-	version, err = sm.Version()
-	if err != nil {
-		t.Fatalf("error while running Version: %s", err)
-	}
-	if version != 5 {
-		t.Fatalf("expected Version 5, but got %v", version)
-	}
-}
-
-func TestMigrate(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("could not open database: %s", err)
-	}
-	sm := NewSqliteMigrator(db)
-
-	// initialize
-	if err := sm.Init(); err != nil {
-		t.Fatalf("error while running Init: %s", err)
+	cases := []Case{
+		{
+			Migrations:     Migrations{Migrations: []Migration{{Up: "a"}, {Up: "b"}, {Up: "c"}}},
+			CurrentVersion: TargetStart,
+			Target:         1,
+			Expected:       []Migration{{Up: "a", version: 1}},
+		},
+		{
+			Migrations:     Migrations{Migrations: []Migration{{Up: "a"}, {Up: "b"}, {Up: "c"}}},
+			CurrentVersion: 3,
+			Target:         1,
+			Expected:       []Migration{{Up: "c", version: 3}, {Up: "b", version: 2}},
+		},
+		{
+			Migrations:     Migrations{Migrations: []Migration{{Up: "a"}, {Up: "b"}, {Up: "c"}}},
+			CurrentVersion: TargetStart,
+			Target:         3,
+			Expected:       []Migration{{Up: "a", version: 1}, {Up: "b", version: 2}, {Up: "c", version: 3}},
+		},
+		{
+			Migrations:     Migrations{Migrations: []Migration{{Up: "a"}, {Up: "b"}, {Up: "c"}}},
+			CurrentVersion: 3,
+			Target:         3,
+			Expected:       []Migration{},
+		},
 	}
 
-	migrations := []string{
-		"CREATE TABLE test (id INTEGER PRIMARY KEY)",
+	for i, tc := range cases {
+		os.Setenv(EnvVarTarget, fmt.Sprintf("%v", tc.Target))
+		b, err := newBase(nil, tc.Migrations)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := b.targetMigrations(tc.CurrentVersion)
+		if !slices.Equal(actual, tc.Expected) {
+			t.Errorf("%v: expected %v but got %v", i, tc.Expected, actual)
+		}
 	}
-
-	if err := sm.Migrate(migrations); err != nil {
-		t.Fatalf("error while running Upgrade: %s", err)
-	}
-
-	v, err := sm.Version()
-	if err != nil {
-		t.Fatalf("error while checking version: %s", err)
-	}
-	if v != 1 {
-		t.Fatalf("expected version to be 1 after upgrade but was %v", v)
-	}
-
-	sql := "SELECT name	FROM sqlite_master WHERE type='table' AND name='test'"
-	rows, err := sm.db.Query(sql)
-	if err != nil {
-		t.Fatalf("error while running verifying test: %s", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		return
-	}
-	t.Fatalf("expected to find table named 'test' but did not")
 }

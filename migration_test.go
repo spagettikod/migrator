@@ -7,8 +7,8 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	os.Setenv(EnvVarFile, "testdata/migrations.yml")
-	defer os.Unsetenv(EnvVarFile)
+	os.Setenv(envVarFile, "testdata/migrations.yml")
+	defer os.Unsetenv(envVarFile)
 	m, err := load()
 	if err != nil {
 		t.Fatal(err)

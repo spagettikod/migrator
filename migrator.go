@@ -1,3 +1,37 @@
+// Migrator provides an easy way to handle SQL database migrations from Go applications.
+//
+// Example:
+//
+//	package main
+//
+//	import (
+//		"database/sql"
+//		"log"
+//
+//		_ "github.com/mattn/go-sqlite3"
+//		"github.com/spagettikod/migrator"
+//	)
+//
+//	func main() {
+//		// Setup your database connection for your application
+//		db, err := sql.Open("sqlite3", ":memory:")
+//		if err != nil {
+//			log.Fatal(err)
+//		}
+//
+//		// Create a migrator for your database
+//		// (it will initialize it self if run for the first time)
+//		migrator, err := migrator.NewSqliteMigrator(db)
+//		if err != nil {
+//			log.Fatal(err)
+//		}
+//
+//		// Run the migrations in up/down to the given target version
+//		_, err = migrator.Migrate()
+//		if err != nil {
+//			log.Fatal(err)
+//		}
+//	}
 package migrator
 
 import (
@@ -9,8 +43,8 @@ import (
 )
 
 const (
-	EnvVarFile              = "MIGRATOR_FILE"
-	EnvVarTarget            = "MIGRATOR_TARGET_VERSION"
+	envVarFile              = "MIGRATOR_FILE"
+	envVarTarget            = "MIGRATOR_TARGET_VERSION"
 	targetStart             = 0
 	invalidTarget           = -2
 	directionUp   direction = 1
@@ -18,10 +52,12 @@ const (
 	directionNone direction = 0
 )
 
-var ErrInvalidTargetVersion = errors.New("migrator: target version is not valid, make sure MIGRATOR_TARGET_VERSION is correct")
-var ErrTargetOutOfBounds = errors.New("migrator: MIGRATOR_TARGET_VERSION does not match number of migrations")
-var ErrMigratorNotInitialized = errors.New("migrator: not initialized, did you call Init?")
-var ErrMigrationFileEnvMissing = errors.New("migrator: environment variable MIGRATOR_FILE empty, can not load migrations")
+var (
+	ErrInvalidTargetVersion    = errors.New("migrator: target version is not valid, make sure MIGRATOR_TARGET_VERSION is correct")
+	ErrTargetOutOfBounds       = errors.New("migrator: MIGRATOR_TARGET_VERSION does not match number of migrations")
+	ErrMigratorNotInitialized  = errors.New("migrator: not initialized, did you call Init?")
+	ErrMigrationFileEnvMissing = errors.New("migrator: environment variable MIGRATOR_FILE empty, can not load migrations")
+)
 
 type direction int
 
@@ -57,7 +93,7 @@ func newBase(db *sql.DB, migrations Migrations) (base, error) {
 
 func (b base) parseTarget() (int, error) {
 	target := invalidTarget
-	tStr, found := os.LookupEnv(EnvVarTarget)
+	tStr, found := os.LookupEnv(envVarTarget)
 	if found {
 		var err error
 		target, err = strconv.Atoi(tStr)

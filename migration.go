@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Migrations is a collection of Migrations, i.e. the YAML file.
 type Migrations struct {
 	Migrations []Migration `yaml:"migrations"`
 }
@@ -16,6 +17,7 @@ func (ms Migrations) enumerateMigrations() {
 	}
 }
 
+// Migration represents an entry defined in the migration YAML.
 type Migration struct {
 	Comment string `yaml:"comment"`
 	Up      string `yaml:"up"`
@@ -25,7 +27,7 @@ type Migration struct {
 }
 
 func load() (Migrations, error) {
-	filename, found := os.LookupEnv(EnvVarFile)
+	filename, found := os.LookupEnv(envVarFile)
 	if !found {
 		return Migrations{}, ErrMigrationFileEnvMissing
 	}

@@ -9,8 +9,8 @@ import (
 )
 
 func initSQLiteTest(t *testing.T) *sql.DB {
-	os.Unsetenv(EnvVarFile)
-	os.Unsetenv(EnvVarTarget)
+	os.Unsetenv(envVarFile)
+	os.Unsetenv(envVarTarget)
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("could not open database: %s", err)
@@ -20,9 +20,9 @@ func initSQLiteTest(t *testing.T) *sql.DB {
 
 func TestSQLiteInitialized(t *testing.T) {
 	db := initSQLiteTest(t)
-	os.Setenv(EnvVarTarget, "2")
-	os.Setenv(EnvVarFile, "testdata/migrations.yml")
-	defer os.Unsetenv(EnvVarFile)
+	os.Setenv(envVarTarget, "2")
+	os.Setenv(envVarFile, "testdata/migrations.yml")
+	defer os.Unsetenv(envVarFile)
 	sm, err := NewSqliteMigrator(db)
 	if err != nil {
 		t.Fatalf("error while creating migrator: %s", err)
@@ -38,9 +38,9 @@ func TestSQLiteInitialized(t *testing.T) {
 
 func TestSQLiteVersion(t *testing.T) {
 	db := initSQLiteTest(t)
-	os.Setenv(EnvVarTarget, "2")
-	os.Setenv(EnvVarFile, "testdata/migrations.yml")
-	defer os.Unsetenv(EnvVarFile)
+	os.Setenv(envVarTarget, "2")
+	os.Setenv(envVarFile, "testdata/migrations.yml")
+	defer os.Unsetenv(envVarFile)
 	sm, err := NewSqliteMigrator(db)
 	if err != nil {
 		t.Fatalf("error while creating migrator: %s", err)
@@ -72,9 +72,9 @@ func TestSQLiteVersion(t *testing.T) {
 
 func TestSQLiteMigrate(t *testing.T) {
 	db := initSQLiteTest(t)
-	os.Setenv(EnvVarTarget, "1")
-	os.Setenv(EnvVarFile, "testdata/sqlite_migration_up.yml")
-	defer os.Unsetenv(EnvVarFile)
+	os.Setenv(envVarTarget, "1")
+	os.Setenv(envVarFile, "testdata/sqlite_migration_up.yml")
+	defer os.Unsetenv(envVarFile)
 	defer db.Close()
 	sm, err := NewSqliteMigrator(db)
 	if err != nil {
@@ -108,7 +108,7 @@ func TestSQLiteMigrate(t *testing.T) {
 	}
 
 	// downgrade
-	os.Setenv(EnvVarTarget, "0")
+	os.Setenv(envVarTarget, "0")
 	sm, err = NewSqliteMigrator(db)
 	if err != nil {
 		t.Fatalf("could not load migration yaml: %s", err)

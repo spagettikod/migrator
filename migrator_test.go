@@ -18,7 +18,7 @@ func TestTargetVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.Setenv(EnvVarTarget, "a")
+	os.Setenv(envVarTarget, "a")
 	_, err = b.parseTarget()
 	if err == nil {
 		t.Errorf("error was nil, expected an error")
@@ -27,7 +27,7 @@ func TestTargetVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.Setenv(EnvVarTarget, "-1")
+	os.Setenv(envVarTarget, "-1")
 	_, err = b.parseTarget()
 	if err == nil {
 		t.Errorf("error was nil, expected an error")
@@ -36,7 +36,7 @@ func TestTargetVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.Setenv(EnvVarTarget, "5")
+	os.Setenv(envVarTarget, "5")
 	_, err = b.parseTarget()
 	if err == nil {
 		t.Errorf("error was nil, expected an error")
@@ -45,7 +45,7 @@ func TestTargetVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.Setenv(EnvVarTarget, "0")
+	os.Setenv(envVarTarget, "0")
 	_, err = b.parseTarget()
 	if err != nil {
 		t.Errorf("undexpected error occured: %s", err)
@@ -131,7 +131,7 @@ func TestTargetMigrations(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		os.Setenv(EnvVarTarget, fmt.Sprintf("%v", tc.Target))
+		os.Setenv(envVarTarget, fmt.Sprintf("%v", tc.Target))
 		b, err := newBase(nil, tc.Migrations)
 		if err != nil {
 			t.Fatal(err)

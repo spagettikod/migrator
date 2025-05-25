@@ -23,8 +23,8 @@ func TestPostgresUtil(t *testing.T) {
 }
 
 func connect(t *testing.T, target, filename string) *sql.DB {
-	os.Setenv(EnvVarTarget, target)
-	os.Setenv(EnvVarFile, filename)
+	os.Setenv(envVarTarget, target)
+	os.Setenv(envVarFile, filename)
 	db, err := sql.Open("pgx", postgresConnStr)
 	if err != nil {
 		t.Fatalf("could not open database: %s", err)
@@ -33,8 +33,8 @@ func connect(t *testing.T, target, filename string) *sql.DB {
 }
 
 func tearDownTest(db *sql.DB) {
-	os.Unsetenv(EnvVarFile)
-	os.Unsetenv(EnvVarTarget)
+	os.Unsetenv(envVarFile)
+	os.Unsetenv(envVarTarget)
 	db.Close()
 }
 
@@ -128,7 +128,7 @@ func TestPostgresMigrate(t *testing.T) {
 	}
 
 	// downgrade
-	os.Setenv(EnvVarTarget, "0")
+	os.Setenv(envVarTarget, "0")
 	pm, err = NewPostgresMigrator(db, "")
 	if err != nil {
 		t.Fatalf("could not create PostgresMigrator: %s", err)

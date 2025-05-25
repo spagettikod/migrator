@@ -11,13 +11,17 @@ This package only depends on database drivers for testing. When in usage it only
 Your migrations are store in a YAML file with the following format:
 ```yaml
 migrations:
-    # comment is an optinal field with details about your migration step
+    # comment is an optional field with
+    # details about your migration step
   - comment: "My first migration"
-    # up is the SQL statement executed when upgrading your database
+    # up is the SQL statement executed
+    # when upgrading your database
     up: >
       CREATE TABLE test
       (id INTEGER PRIMARY KEY)
-    # down is the SQL statement executed when downgrading, usually it reverses the effect of an upgrade
+    # down is the SQL statement executed when
+    # downgrading, usually it reverses the
+    # effect of an upgrade
     down: >
       DROP TABLE test
 ...

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-go test -v -run TestSQLite
+go test -v ./...
 
 export INTEGRATION=1
 docker compose --file testdata/docker-compose.yml --progress quiet up -d

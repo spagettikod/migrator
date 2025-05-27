@@ -37,6 +37,7 @@ package migrator
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"slices"
 	"strconv"
@@ -151,7 +152,7 @@ func (b base) migrate(m Migrator) ([]Migration, error) {
 	tms := b.targetMigrations(v)
 	for _, tm := range tms {
 		if _, err := b.db.Exec(tm.stmt(migrationDirection(v, b.target))); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("migrating to version %v failed: %w", tm.Version(), err)
 		}
 		if migrationDirection(v, b.target) == directionDown {
 			m.setVersion(tm.version - 1)

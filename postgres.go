@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log/slog"
 )
 
 type PostgresMigrator struct {
@@ -90,12 +89,7 @@ func (pm PostgresMigrator) initialized() (bool, error) {
 }
 
 func (pm PostgresMigrator) setVersion(version int) error {
-	currentVersion, err := pm.Version()
-	if err != nil {
-		return err
-	}
 	stmt := fmt.Sprintf("UPDATE %s._migrator_ SET version = $1", pm.schema)
-	slog.Debug("setting version", "currentVersion", currentVersion, "new_version", version, "sql", stmt)
-	_, err = pm.db.Exec(stmt, version)
+	_, err := pm.db.Exec(stmt, version)
 	return err
 }

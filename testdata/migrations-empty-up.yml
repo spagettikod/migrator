@@ -1,0 +1,12 @@
+migrations:
+  - comment: "My first migration"
+    up: >
+      CREATE TABLE test
+      (id INTEGER PRIMARY KEY) 
+    down: >
+      DROP TABLE test
+  - comment: "My second migration"
+    up: 
+    down: >
+      CREATE TABLE test
+      (id INTEGER PRIMARY KEY) 

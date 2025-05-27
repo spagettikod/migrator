@@ -22,4 +22,9 @@ func TestLoad(t *testing.T) {
 	if strings.TrimSpace(m.Migrations[1].Down) != "CREATE TABLE test (id INTEGER PRIMARY KEY)" {
 		t.Errorf("expected %s but got %s", "DROP TABLE test", m.Migrations[1].Down)
 	}
+
+	os.Setenv(envVarFile, "testdata/migrations-empty-up.yml")
+	if _, err = load(); err == nil {
+		t.Errorf("expected and error but the error was <nil>")
+	}
 }

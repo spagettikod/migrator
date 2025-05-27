@@ -13,16 +13,17 @@ Your migrations are store in a YAML file with the following format:
 migrations:
     # comment is an optional field with details about your migration step
   - comment: "My first migration"
-    # up is the SQL statement executed when upgrading your database
+    # up is the SQL statement executed when upgrading your database. This field is mandatory.
     up: >
       CREATE TABLE test
       (id INTEGER PRIMARY KEY)
     # down is the SQL statement executed when downgrading, usually it reverses the
-    # effect of an upgrade
+    # effect of an upgrade. This field is optional.
     down: >
       DROP TABLE test
 ...
 ```
+A migration must atleast have an `up`-statement to be valid.
 
 ## Environment variables
 At run-time there are two environment variables that must be set:

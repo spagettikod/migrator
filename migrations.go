@@ -1,7 +1,9 @@
 package migrator
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -9,6 +11,15 @@ import (
 // Migrations is a collection of Migrations, i.e. the YAML file.
 type Migrations struct {
 	Migrations []Migration `yaml:"migrations"`
+}
+
+func (ms Migrations) validate() error {
+	for _, m := range ms.Migrations {
+		if strings.TrimSpace(m.Up) == "" {
+			return fmt.Errorf("migrator: \"up\"-statment for version %v is either missing or empty", m.Version())
+		}
+	}
+	return nil
 }
 
 func (ms Migrations) enumerateMigrations() {
@@ -30,5 +41,5 @@ func load() (Migrations, error) {
 	if err := yaml.Unmarshal(b, &migrations); err != nil {
 		return Migrations{}, err
 	}
-	return migrations, nil
+	return migrations, migrations.validate()
 }

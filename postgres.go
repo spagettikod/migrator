@@ -59,6 +59,12 @@ func (pm PostgresMigrator) Migrate() ([]Migration, error) {
 	return pm.migrate(pm)
 }
 
+// Migrate will run the forward migrations in the array and run the callback function when the
+// migrations has run without any error and the database has been updated to the new version.
+func (pm PostgresMigrator) MigrateCallback(fn func(m Migration)) ([]Migration, error) {
+	return pm.migrateCallback(pm, fn)
+}
+
 func (pm PostgresMigrator) init() error {
 	initialized, err := pm.initialized()
 	if err != nil {

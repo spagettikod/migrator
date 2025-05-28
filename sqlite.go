@@ -53,6 +53,12 @@ func (sm SqliteMigrator) Migrate() ([]Migration, error) {
 	return sm.migrate(sm)
 }
 
+// Migrate will run the forward migrations in the array and run the callback function when the
+// migrations has run without any error and the database has been updated to the new version.
+func (sm SqliteMigrator) MigrateCallback(fn func(m Migration)) ([]Migration, error) {
+	return sm.migrateCallback(sm, fn)
+}
+
 func (sm SqliteMigrator) init() error {
 	initialized, err := sm.initialized()
 	if err != nil {

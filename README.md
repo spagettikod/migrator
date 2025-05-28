@@ -5,10 +5,10 @@ Supported databases:
 * **SQLite** (tested on version 3)
 * **PostgreSQL** (tested on 17.4 but should work for older versions as well)
 
-This package only depends on database drivers for testing. When in usage it only uses the standard package `database/sql`.
+This package only depends on database drivers for testing. When in regular use it only uses the standard package `database/sql`.
 
 ## Migrations file
-Your migrations are store in a YAML file with the following format:
+Your migrations are store in a YAML file in the following format:
 ```yaml
 migrations:
     # comment is an optional field with details about your migration step
@@ -38,6 +38,8 @@ Setting `MIGRATOR_TARGET_VERSION` to 1 at version 0 and running `Migrate()` will
 If you run your migration again but setting `MIGRATOR_TARGET_VERSION` to 0 it will run the your `down` statement and the database will be at version 0.
 
 ## Example
+There is also a working example in [tesdata/example](testdata/example).
+
 1. Write your application in, `main.go`:
     ```golang
     package main

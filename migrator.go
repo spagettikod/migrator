@@ -67,6 +67,11 @@ type Migrator interface {
 	Version() (int, error)
 	// Migrate will run the forward migrations in the array.
 	Migrate() ([]Migration, error)
+	// Migrate will run the forward migrations in the array and
+	// run the callback function when the migrations has run
+	// without any error and the database has been updated to
+	// the new version.
+	MigrateCallback(fn func(m Migration)) ([]Migration, error)
 	// init will set up the Migrator for the current database.
 	init() error
 	// initialized will check if the Migrator is setup in this database.
@@ -145,6 +150,10 @@ func (b base) targetMigrations(currVer int) []Migration {
 }
 
 func (b base) migrate(m Migrator) ([]Migration, error) {
+	return b.migrateCallback(m, func(m Migration) {})
+}
+
+func (b base) migrateCallback(m Migrator, fn func(m Migration)) ([]Migration, error) {
 	v, err := m.Version()
 	if err != nil {
 		return nil, err
@@ -154,11 +163,12 @@ func (b base) migrate(m Migrator) ([]Migration, error) {
 		if _, err := b.db.Exec(tm.stmt(migrationDirection(v, b.target))); err != nil {
 			return nil, fmt.Errorf("migrating to version %v failed: %w", tm.Version(), err)
 		}
+		newVersion := tm.version
 		if migrationDirection(v, b.target) == directionDown {
-			m.setVersion(tm.version - 1)
-		} else {
-			m.setVersion(tm.version)
+			newVersion = tm.version - 1
 		}
+		m.setVersion(newVersion)
+		fn(tm)
 	}
 	return tms, nil
 }

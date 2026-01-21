@@ -1,3 +1,5 @@
+THIS PROJECT HAS BEEN MIGRATED TO https://codeberg.org/spagettikod/migrator
+
 # Migrator
 Package to run SQL migrations from within your Go application. It supports upgrading and downgrading your database.
 
